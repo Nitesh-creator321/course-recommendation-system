@@ -25,3 +25,32 @@ This project is a web-based application that recommends courses to students base
 5. Open the project in browser:
 
 http://localhost/course_recommender
+
+## Project Screenshots
+
+### Home Page
+![Home](screenshots/home1.png)
+
+### Login Page
+![Login](screenshots/login.png)
+
+### Create Account
+![Signup](screenshots/signup.png)
+
+### Course Catalog
+![Catalog](screenshots/catalog.png)
+
+### User Dashboard
+![Dashboard](screenshots/dashboard.png)
+
+### Course Details
+![Course Details](screenshots/course_details.png)
+
+### Learning Roadmap
+![Roadmap](screenshots/roadmap.png)
+
+### Courses Applied
+![Courses Applied](screenshots/courses_applied.png)
+
+### Learning Progress
+![Learning Progress](screenshots/learning_progress.png)
