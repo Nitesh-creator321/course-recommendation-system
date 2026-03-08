@@ -1,32 +1,26 @@
 <?php
 session_start();
 
-// Enable error reporting for development (disable in production)
+// Enable error reporting
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-// Check if the form was submitted
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-
-    // Database connection details
     $servername = "localhost";
     $username = "root";
-    $password = ""; // <--- IMPORTANT: SET YOUR DATABASE ROOT PASSWORD HERE
+    $password = ""; 
     $dbname = "course_recommender_db";
 
-    // Create database connection
     $conn = new mysqli($servername, $username, $password, $dbname);
 
-    // Check connection
     if ($conn->connect_error) {
         die("Database Connection failed: " . $conn->connect_error);
     }
 
-    // Retrieve and sanitize form data
     $first_name = trim(htmlspecialchars($_POST['first_name'] ?? ''));
     $last_name = trim(htmlspecialchars($_POST['last_name'] ?? ''));
     $email = trim(htmlspecialchars($_POST['email'] ?? ''));
-    $raw_password = $_POST['password'] ?? ''; // Get raw password for hashing
+    $raw_password = $_POST['password'] ?? ''; 
     $phone = trim(htmlspecialchars($_POST['phone'] ?? ''));
     $school_college_company_name = trim(htmlspecialchars($_POST['school_college_company_name'] ?? ''));
     $address = trim(htmlspecialchars($_POST['address'] ?? ''));
@@ -34,7 +28,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $study = trim(htmlspecialchars($_POST['study'] ?? ''));
     $dob = trim(htmlspecialchars($_POST['dob'] ?? ''));
     
-    // --- Server-side validation ---
     $errors = [];
 
     if (empty($first_name)) { $errors[] = "First name is required."; }
@@ -42,11 +35,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $errors[] = "A valid email is required.";
     }
-    if (empty($raw_password) || strlen($raw_password) < 6) { // Example: password must be at least 6 characters
-        $errors[] = "Password is required and must be at least 6 characters long.";
+    if (empty($raw_password) || strlen($raw_password) < 6) {
+        $errors[] = "Password must be at least 6 characters.";
     }
     if (empty($phone)) { $errors[] = "Phone number is required."; }
-    if (empty($school_college_company_name)) { $errors[] = "School/College/Company name is required."; }
+    if (empty($school_college_company_name)) { $errors[] = "Institution name is required."; }
     if (empty($address)) { $errors[] = "Address is required."; }
     if (empty($pincode)) { $errors[] = "Pincode is required."; }
     if (empty($study)) { $errors[] = "Study level is required."; }
@@ -54,65 +47,60 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 
     if (empty($errors)) {
-        // Hash the password securely
         $hashed_password = password_hash($raw_password, PASSWORD_DEFAULT);
-
-        // Prepare an INSERT statement for the 'users' table
         $stmt = $conn->prepare("INSERT INTO users (first_name, last_name, email, password, phone, school_college_company_name, address, pincode, study, dob) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         if ($stmt === false) {
             die("Prepare failed: " . $conn->error);
         }
 
-        // Bind parameters
         $stmt->bind_param("ssssssssss", $first_name, $last_name, $email, $hashed_password, $phone, $school_college_company_name, $address, $pincode, $study, $dob);
 
         try {
             if ($stmt->execute()) {
-                // Registration successful
-                // Redirect to login page instead of logging in automatically
                 header("Location: login.php"); 
                 exit;
-            } else {
-                // This else block might not be reached if mysqli_report is strict
-                $errors[] = "Error during registration: " . $stmt->error;
             }
         } catch (mysqli_sql_exception $e) {
-            // Catch specific SQL exceptions, like duplicate entry
-            if ($e->getCode() == 1062) { // MySQL error code for duplicate entry for unique key
-                $errors[] = "This email is already registered. Please use a different email.";
+            if ($e->getCode() == 1062) {
+                $errors[] = "This email is already registered.";
             } else {
-                $errors[] = "Database error during registration: " . $e->getMessage();
+                $errors[] = "Registration error: " . $e->getMessage();
             }
         }
-
-        // Close the statement
         $stmt->close();
     }
 
-    // If there are errors, store them in session and redirect back to registration form
     if (!empty($errors)) {
         $_SESSION['registration_errors'] = $errors;
-        header("Location: " . $_SERVER['PHP_SELF']); // Redirect back to this page
+        header("Location: " . $_SERVER['PHP_SELF']);
         exit;
     }
-
-    // Close the database connection
     $conn->close();
-
 }
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Sign Up</title>
+    <meta charset="UTF-8">
+    <title>Create Account | ICR System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
+        :root {
+            --primary: #10b981; /* Professional Emerald Green */
+            --primary-hover: #059669;
+            --glass-bg: rgba(15, 23, 42, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+        }
+
         * {
             box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
+            font-family: 'Inter', sans-serif;
         }
 
         body {
@@ -123,211 +111,244 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            padding: 20px;
-            font-weight: 600; /* Applied font-weight to body for general text */
+            padding: 40px 20px;
+        }
+
+        /* Overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            z-index: 0;
         }
 
         .signup-container {
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 1;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 50px;
+            border-radius: 28px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             width: 100%;
-            max-width: 500px;
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            color: #000; /* Changed to black */
-            position: relative; /* Added for absolute positioning of the back arrow */
+            max-width: 700px;
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            animation: fadeIn 0.6s ease-out;
         }
 
-        .signup-container h2 { 
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 2.2em;
-            font-weight: 800; /* Made title even bolder */
-            color: #000; /* Changed to black */
-            text-shadow: none; /* Removed text shadow for black text */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Styling for the back arrow box */
-        .back-arrow-box {
+        .back-nav {
             position: absolute;
-            top: 15px; /* Position the box */
-            left: 20px; /* Position the box */
-            background: rgba(255, 255, 255, 0.3); /* Semi-transparent background for the box */
-            backdrop-filter: blur(5px); /* Subtle blur for the box */
-            -webkit-backdrop-filter: blur(5px);
-            border-radius: 10px; /* Rounded corners for the box */
-            padding: 8px 12px; /* Padding inside the box */
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2); /* Shadow for the box */
-            display: flex; /* Use flexbox to center the arrow */
+            top: 25px;
+            left: 25px;
+        }
+
+        .back-nav a {
+            color: var(--text-dim);
+            text-decoration: none;
+            width: 40px;
+            height: 40px;
+            display: flex;
             align-items: center;
             justify-content: center;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            transition: 0.3s;
         }
 
-        .back-arrow-box:hover {
-            transform: translateY(-2px); /* Lift effect on hover */
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3); /* Stronger shadow on hover */
+        .back-nav a:hover {
+            background: var(--primary);
+            color: #fff;
+            transform: translateX(-3px);
         }
 
-        /* Styling for the arrow icon itself within the box */
-        .back-arrow-icon {
-            font-size: 28px; /* Larger arrow */
-            color: #000; /* Black color for the arrow */
-            margin-bottom: 5px;
-            text-decoration: none;
-            transition: color 0.2s ease;
-            line-height: 1; /* Ensures vertical alignment */
-            font-weight: 800; /* Make arrow bold */
+        h2 {
+            text-align: center;
+            margin-bottom: 35px;
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(to bottom, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        .back-arrow-icon:hover {
-            color: #4CAF50; /* Green color on hover */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
         }
 
+        .full-width { grid-column: span 2; }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
 
         label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 700; /* Made labels bolder */
-            font-size: 0.95em;
-            color: #333; /* Changed to dark grey for labels */
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            margin-left: 4px;
         }
 
         input, select, textarea {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--glass-border);
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 0.95rem;
+            transition: 0.3s;
+            outline: none;
             width: 100%;
-            padding: 12px 15px;
-            margin-bottom: 15px;
-            border: 1px solid rgba(0, 0, 0, 0.2); /* Darker border for inputs */
-            border-radius: 8px;
-            font-size: 1em;
-            background-color: rgba(0, 0, 0, 0.05); /* Very light transparent black for inputs */
-            color: #333; /* Changed to dark grey for input text */
-            transition: all 0.3s ease;
-            font-weight: 600; /* Made input text bolder */
-        }
-
-        input::placeholder, textarea::placeholder {
-            color: rgba(0, 0, 0, 0.5); /* Darker placeholder text */
-            font-weight: 600; /* Made placeholder text bolder */
         }
 
         input:focus, select:focus, textarea:focus {
-            outline: none;
-            border-color: #4CAF50; /* Green accent on focus */
-            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.3); /* Green glow effect */
-            background-color: rgba(0, 0, 0, 0.1); /* Slightly darker transparent on focus */
+            border-color: var(--primary);
+            background: rgba(15, 23, 42, 0.9);
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
         }
 
-        /* Specific styles for select dropdown and its options */
-        select {
-            background-color: #000; /* Black background for dropdown */
-            color: #fff; /* White text for dropdown */
-            border: 1px solid #333; /* Darker border for dropdown */
-            font-weight: 600; /* Made select text bolder */
-        }
-
-        /* For the dropdown options when the list opens */
+        /* Clean Dropdown Styling */
         select option {
-            background-color: #000; /* Black background for options */
-            color: #fff; /* White text for options */
-            font-weight: 600; /* Made option text bolder */
+            background: #1e293b;
+            color: #fff;
         }
 
         button {
             width: 100%;
-            padding: 15px;
-            background: linear-gradient(to right, #2ecc71, #27ae60);
+            padding: 16px;
+            background: var(--primary);
             color: white;
             border: none;
-            font-size: 1.1em;
-            font-weight: 700; /* Made button text bolder */
+            font-size: 1.1rem;
+            font-weight: 700;
             cursor: pointer;
-            border-radius: 8px;
+            border-radius: 14px;
             margin-top: 20px;
-            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
-            transition: all 0.3s ease;
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
         }
 
         button:hover {
-            background: linear-gradient(to right, #27ae60, #229a5b);
+            background: var(--primary-hover);
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(46, 204, 113, 0.6);
+            box-shadow: 0 15px 25px -5px rgba(16, 185, 129, 0.4);
         }
 
-        .error,
         .session-errors {
-            color: #fff; /* Keep white text for errors on red background */
-            background-color: rgba(255, 0, 0, 0.6); /* Slightly more opaque red background */
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 15px;
-            text-align: center;
-            border: 1px solid rgba(255, 0, 0, 0.8);
-            font-weight: 600; /* Made error text bolder */
+            background: rgba(239, 68, 68, 0.15);
+            color: #fda4af;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            font-size: 0.9rem;
+        }
+
+        .session-errors p { margin: 5px 0; }
+
+        @media (max-width: 650px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .full-width { grid-column: span 1; }
+            .signup-container { padding: 40px 25px; }
         }
     </style>
 </head>
 <body>
+
 <div class="signup-container">
-    <div class="back-arrow-box"> <!-- New wrapper for the arrow -->
-        <a href="login.php" class="back-arrow-icon" title="Back to Login">&#8592;</a>
+    <div class="back-nav">
+        <a href="login.php" title="Back to Login"><i class="fas fa-arrow-left"></i></a>
     </div>
-    <h2>Create Your Account</h2>
+
+    <h2>Join the System</h2>
+
     <?php
-    // Display session errors if any
     if (isset($_SESSION['registration_errors']) && !empty($_SESSION['registration_errors'])) {
         echo "<div class='session-errors'>";
         foreach ($_SESSION['registration_errors'] as $err) {
-            echo "<p>$err</p>";
+            echo "<p><i class='fas fa-exclamation-circle'></i> $err</p>";
         }
-        unset($_SESSION['registration_errors']); // Clear errors after displaying
+        unset($_SESSION['registration_errors']);
         echo "</div>";
     }
     ?>
-    <form method="POST" action="">
-        <label for="first_name">First Name</label>
-        <input type="text" id="first_name" name="first_name" placeholder="Enter your first name" required>
 
-        <label for="last_name">Last Name</label>
-        <input type="text" id="last_name" name="last_name" placeholder="Enter your last name" required>
+    <form method="POST" action="" class="form-grid">
+        <div class="form-group">
+            <label>First Name</label>
+            <input type="text" name="first_name" placeholder="John" required>
+        </div>
 
-        <label for="email">Email</label>
-        <input type="email" id="email" name="email" placeholder="Enter your email" required>
+        <div class="form-group">
+            <label>Last Name</label>
+            <input type="text" name="last_name" placeholder="Doe" required>
+        </div>
 
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" placeholder="Create a password" required>
+        <div class="form-group full-width">
+            <label>Email Address</label>
+            <input type="email" name="email" placeholder="john@example.com" required>
+        </div>
 
-        <label for="phone">Phone Number</label>
-        <input type="tel" id="phone" name="phone" placeholder="Enter your phone number" required>
+        <div class="form-group full-width">
+            <label>Password</label>
+            <input type="password" name="password" placeholder="Minimum 6 characters" required>
+        </div>
 
-        <label for="school_college_company_name">School / College / Company Name</label>
-        <input type="text" id="school_college_company_name" name="school_college_company_name" placeholder="Your institution/employer" required>
+        <div class="form-group">
+            <label>Phone Number</label>
+            <input type="tel" name="phone" placeholder="+91..." required>
+        </div>
 
-        <label for="address">Address</label>
-        <textarea id="address" name="address" rows="3" placeholder="Your full address" required></textarea>
+        <div class="form-group">
+            <label>Institution / Company</label>
+            <input type="text" name="school_college_company_name" placeholder="Organization name" required>
+        </div>
 
-        <label for="pincode">Pincode</label>
-        <input type="text" id="pincode" name="pincode" placeholder="Your area pincode" required>
+        <div class="form-group full-width">
+            <label>Address</label>
+            <textarea name="address" rows="2" placeholder="Full residential address" required></textarea>
+        </div>
 
-        <label for="study">Select Study Level</label>
-        <select id="study" name="study" required>
-            <option value="">Select Study</option>
-            <option value="SSC">SSC</option>
-            <option value="HSC">HSC</option>
-            <option value="Diploma">Diploma</option>
-            <option value="Bachelor's">Undergraduate</option>
-            <option value="Master's">Postgraduate</option>
-            <option value="Engineering">Engineering</option>
-        </select>
-        
-        <label for="dob">Date of Birth</label>
-        <input type="date" id="dob" name="dob" required>
-        
-        <button type="submit">Register</button>
+        <div class="form-group">
+            <label>Area Pincode</label>
+            <input type="text" name="pincode" placeholder="600001" required>
+        </div>
+
+        <div class="form-group">
+            <label>Date of Birth</label>
+            <input type="date" name="dob" required>
+        </div>
+
+        <div class="form-group full-width">
+            <label>Current Study Level</label>
+            <select name="study" required>
+                <option value="">Select Level</option>
+                <option value="SSC">SSC</option>
+                <option value="HSC">HSC</option>
+                <option value="Diploma">Diploma</option>
+                <option value="Bachelor's">Undergraduate</option>
+                <option value="Master's">Postgraduate</option>
+                <option value="Engineering">Engineering</option>
+            </select>
+        </div>
+
+        <div class="full-width">
+            <button type="submit">Create Account</button>
+        </div>
     </form>
 </div>
+
 </body>
 </html>

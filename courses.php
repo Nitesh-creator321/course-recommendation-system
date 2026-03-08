@@ -14,7 +14,7 @@ error_reporting(E_ALL);
 // DB connection
 $servername = "localhost";
 $username = "root";
-$password = ""; // <--- IMPORTANT: SET YOUR DATABASE ROOT PASSWORD HERE
+$password = ""; 
 $dbname = "course_recommender_db";
 
 $conn = new mysqli($servername, $username, $password, $dbname);
@@ -45,7 +45,6 @@ $interest_mapping = [
     "Computer Science" => ["Data Structures and Algorithms", "Operating Systems"]
 ];
 
-// This boolean flag will determine if a valid filter is active
 $is_filter_active = ($interest && array_key_exists($interest, $interest_mapping));
 
 if ($is_filter_active) {
@@ -63,12 +62,10 @@ if ($is_filter_active) {
 $no_courses_message = "";
 if ($result) {
     if ($is_filter_active && $result->num_rows === 0) {
-        $no_courses_message = "<p class='no-courses-message'>No courses found for the selected interest: " . htmlspecialchars($interest) . "</p>";
+        $no_courses_message = "<p class='no-courses-message'>No courses found for: " . htmlspecialchars($interest) . "</p>";
     } elseif (!$is_filter_active && $result->num_rows === 0) {
-        $no_courses_message = "<p class='no-courses-message'>There are currently no courses available.</p>";
+        $no_courses_message = "<p class='no-courses-message'>No courses available at this time.</p>";
     }
-} else {
-    $no_courses_message = "<p class='no-courses-message error'>Error retrieving course data.</p>";
 }
 ?>
 
@@ -76,464 +73,257 @@ if ($result) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Courses</title>
+    <title>Courses | Learning Platform</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /*
-         * Professional CSS Refactor for Course Page
-         * ----------------------------------------
-         * This style sheet provides a cleaner, more professional look
-         * by using a consistent color palette, improved spacing,
-         * and a more refined design language. It maintains the
-         * original layout and functionality.
-         */
-
-        /* === General Styles & Variables === */
         :root {
-            --background-dark: #0f172a; /* Slate background */
-            --surface-card: rgba(30, 41, 59, 0.7); /* Dark semi-transparent card background */
-            --text-light: #e2e8f0; /* Off-white text for dark backgrounds */
-            --text-muted: #94a3b8; /* Muted text for descriptions */
-            --primary-accent: #3b82f6; /* A clean, professional blue */
-            --secondary-accent: #10b981; /* A friendly green for actions */
-            --border-subtle: rgba(226, 232, 240, 0.1);
-            --shadow-subtle: rgba(0, 0, 0, 0.2);
-            --shadow-strong: rgba(0, 0, 0, 0.4);
-            --font-poppins: 'Poppins', Arial, sans-serif;
+            --primary: #3b82f6;
+            --secondary: #10b981;
+            --dark-glass: rgba(15, 23, 42, 0.8);
+            --light-glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
         }
 
         body {
-            background-color: var(--background-dark);
-            font-family: var(--font-poppins);
-            color: var(--text-light);
-            margin: 0;
-            line-height: 1.6;
-            background-image: url('images/Course_back_image.jpg');
+            background: url('images/Course_back_image.jpg') no-repeat center center fixed;
             background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            position: relative;
+            font-family: 'Inter', sans-serif;
+            color: var(--text-main);
+            margin: 0;
+            line-height: 1.5;
             overflow-x: hidden;
         }
 
+        /* Overlay for professional legibility */
         body::before {
             content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(15, 23, 42, 0.85);
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, rgba(15, 23, 42, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%);
             z-index: -1;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes slideInUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
-
+        /* Navigation Bar Appearance */
         .user-container {
-            position: absolute;
-            top: 25px;
-            right: 30px;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 1.5rem 3rem;
             display: flex;
+            justify-content: flex-end;
             align-items: center;
-            gap: 20px;
-            z-index: 100;
-            animation: fadeIn 1s ease-out forwards;
+            gap: 1.5rem;
+            background: rgba(15, 23, 42, 0.3);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            box-sizing: border-box;
+            border-bottom: 1px solid var(--border);
         }
 
         .user-icon {
-            background: linear-gradient(135deg, var(--secondary-accent), #34d399);
-            color: white;
-            font-weight: 600;
-            font-size: 20px;
-            width: 45px;
-            height: 45px;
+            background: linear-gradient(135deg, var(--primary), #6366f1);
+            color: #fff;
+            width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 50%;
-            border: 3px solid white;
-            box-shadow: 0 4px 15px var(--shadow-strong);
-            transition: all 0.3s ease;
+            border-radius: 10px;
+            font-weight: 700;
             text-decoration: none;
-            position: relative;
-            overflow: hidden;
-            cursor: pointer;
-        }
-        .user-icon:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 20px var(--shadow-strong);
-        }
-
-        .user-icon::before {
-            content: '';
-            position: absolute;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-            z-index: -1;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: 0.3s;
         }
 
         .logout-btn {
+            background: var(--light-glass);
+            color: #fff;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
             text-decoration: none;
-            font-size: 16px;
-            font-weight: 600;
-            padding: 10px 22px;
-            color: white;
-            background: var(--primary-accent);
-            border: none;
-            border-radius: 9999px;
-            box-shadow: 0 3px 10px var(--shadow-subtle);
-            transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: 1px solid var(--border);
+            transition: 0.3s;
         }
 
         .logout-btn:hover {
-            background: #2563eb;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px var(--shadow-strong);
+            background: rgba(239, 68, 68, 0.2);
+            border-color: #ef4444;
         }
 
+        /* Hero Header */
         .header-container {
             text-align: center;
-            margin: 100px auto 40px;
-            animation: slideInUp 1s ease-out forwards;
-            opacity: 0;
+            padding: 180px 20px 60px;
         }
 
         #course-title {
             font-size: 3.5rem;
             font-weight: 800;
-            background: linear-gradient(90deg, #64748b, #cbd5e1);
+            letter-spacing: -0.05em;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(to bottom, #fff 0%, #cbd5e1 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            display: inline-block;
-            padding: 10px 0;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
         }
 
+        /* Filter Controls */
         .filter-buttons-wrapper {
             display: flex;
             justify-content: center;
-            align-items: center;
-            gap: 20px;
-            margin-top: 30px;
-            animation: fadeIn 1.5s ease-out forwards;
-            animation-delay: 0.5s;
-            opacity: 0;
-        }
-        /* Shared styling for both filter buttons to ensure equal size */
-.filter-btn, .filter-btn-clear {
-    display: inline-flex; /* Use flex to center text regardless of element type */
-    justify-content: center;
-    align-items: center;
-    width: 200px; /* Fixed equal width */
-    height: 55px; /* Fixed equal height */
-    font-size: 18px;
-    font-weight: 600;
-    color: white;
-    background: var(--primary-accent);
-    border: none;
-    border-radius: 9999px;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.3s ease;
-    text-decoration: none; /* Important for the <a> tag */
-    box-shadow: 0 4px 10px var(--shadow-subtle);
-    box-sizing: border-box;
-}
-
-.filter-btn:hover, .filter-btn-clear:hover {
-    background: #2563eb;
-    transform: translateY(-2px);
-    color: white; /* Ensures text remains white for <a> tags */
-}
-
-        .filter-dropdown {
-            display: none;
-            margin-top: 20px;
-            text-align: center;
-            animation: fadeIn 1s ease-out forwards;
-            animation-delay: 0.8s;
-            opacity: 0;
+            gap: 1rem;
         }
 
-        .filter-dropdown form {
-            display: inline-flex;
-            gap: 15px;
-            align-items: center;
-            background: var(--surface-card);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            padding: 20px;
-            border-radius: 15px;
-            border: 1px solid var(--border-subtle);
-            box-shadow: 0 5px 20px var(--shadow-strong);
-        }
-
-        .filter-dropdown select, .filter-dropdown button {
-            padding: 10px 15px;
-            font-size: 16px;
-            border-radius: 8px;
-            border: 1px solid var(--border-subtle);
-        }
-
-        .filter-dropdown select {
-            background-color: rgba(0, 0, 0, 0.2);
-            color: var(--text-light);
-            appearance: none;
-            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23e2e8f0%22%20d%3D%22M287%20197.6l-14.2%2014.2-128.8-128.8-128.8%20128.8-14.2-14.2L144%2068.8z%22%2F%3E%3C%2Fsvg%3E');
-            background-repeat: no-repeat;
-            background-position: right 10px center;
-            background-size: 12px;
-        }
-
-        .filter-dropdown option {
-            background-color: var(--background-dark);
-            color: var(--text-light);
-        }
-
-        .filter-dropdown button {
-            background: var(--secondary-accent);
-            color: var(--background-dark);
+        .filter-btn, .filter-btn-clear {
+            padding: 0.8rem 2rem;
+            border-radius: 12px;
             font-weight: 600;
+            font-size: 1rem;
             cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--border);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .filter-dropdown button:hover {
-            background: #059669;
-            transform: translateY(-1px);
+        .filter-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
         }
 
-        /* === Course Cards Grid === */
+        .filter-btn-clear {
+            background: var(--light-glass);
+            color: var(--text-main);
+        }
+
+        .filter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.5);
+        }
+
+        /* Dropdown Box */
+        .filter-dropdown form {
+            background: var(--dark-glass);
+            backdrop-filter: blur(15px);
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            margin: 2rem auto;
+            max-width: 500px;
+            display: flex;
+            gap: 0.8rem;
+        }
+
+        select {
+            flex: 1;
+            background: #0f172a;
+            color: white;
+            border: 1px solid var(--border);
+            padding: 0.8rem;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        /* Course Grid Layout */
         .courses-container {
             display: grid;
-            grid-template-columns: repeat(4, minmax(300px, 1fr));
-            gap: 30px;
-            padding: 40px;
-            justify-content: center;
-            min-height: 30vh; /* Ensure the container has a minimum height */
-            align-items: center; /* Center content vertically */
-        }
-        
-        /* New style for when there are no courses to display */
-        .courses-container:has(> .no-courses-message) {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-        }
-        
-        .no-courses-message {
-            text-align: center;
-            color: var(--text-light);
-            font-size: 20px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
-            font-weight: 600;
-            margin: auto; /* Center the message */
-        }
-        
-        .no-courses-message.error {
-            color: #e74c3c;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2.5rem;
+            padding: 0 4rem 100px;
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
         .course-card {
-            padding: 20px;
-            border-radius: 15px;
-            background: var(--surface-card);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--border-subtle);
-            box-shadow: 0 8px 30px var(--shadow-strong);
-            transition: transform 0.4s ease, box-shadow 0.4s ease;
-            text-align: center;
-            animation: slideInUp 0.8s ease-out forwards;
-            opacity: 0;
-            animation-delay: calc(0.1s * var(--card-index));
-            position: relative;
-            overflow: hidden;
+            background: var(--light-glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            transition: 0.4s ease;
+            display: flex;
+            flex-direction: column;
         }
 
         .course-card:hover {
-            transform: translateY(-10px) scale(1.03);
-            box-shadow: 0 12px 40px var(--shadow-strong);
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--primary);
         }
 
         .course-card img {
             width: 100%;
             height: 180px;
             object-fit: cover;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 8px var(--shadow-subtle);
+            border-radius: 14px;
+            margin-bottom: 1.2rem;
         }
 
         .course-card h3 {
-            font-size: 1.5rem;
-            margin: 0 0 10px;
-            font-weight: 700;
-            color: white;
+            font-size: 1.4rem;
+            margin: 0.5rem 0;
+            color: #fff;
         }
 
         .course-card p {
-            font-size: 14px;
-            color: var(--text-muted);
-            margin-bottom: 15px;
-            line-height: 1.5;
-        }
-
-        .course-card p strong {
-            color: var(--text-light);
+            font-size: 0.95rem;
+            color: var(--text-dim);
+            margin-bottom: 1.5rem;
+            flex-grow: 1;
         }
 
         .enroll-btn {
-            display: inline-block;
-            margin-top: 10px;
-            padding: 10px 20px;
-            background: var(--secondary-accent);
-            color: var(--background-dark);
-            border: none;
-            border-radius: 9999px;
+            background: transparent;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            padding: 0.8rem;
+            border-radius: 10px;
+            text-align: center;
             text-decoration: none;
-            font-size: 16px;
             font-weight: 600;
-            transition: background-color 0.3s ease, transform 0.3s ease;
-            box-shadow: 0 4px 10px var(--shadow-subtle);
+            transition: 0.3s;
         }
 
         .enroll-btn:hover {
-            background: #059669;
-            transform: translateY(-2px);
+            background: var(--primary);
+            color: #fff;
         }
 
+        /* Professional Footer */
         .cw-footer {
+            background: #020617;
+            padding: 60px 20px;
             text-align: center;
-            padding: 40px 20px 20px;
-            background: rgba(226, 232, 240, 0.95);
-            color: var(--background-dark);
-            margin-top: 60px;
-            border-top: 4px solid var(--primary-accent);
-            box-shadow: 0 -4px 15px var(--shadow-strong);
-        }
-
-        .cw-footer__logo {
-            width: 40px;
-            margin: 0 auto 10px;
-            display: block;
-            fill: #4a5568;
+            border-top: 1px solid var(--border);
         }
 
         .cw-footer h2 {
-            margin: 0 0 5px;
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: #4a5568;
+            color: #fff;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
         }
 
-        .cw-footer p.tagline {
-            margin: 0 0 20px;
-            font-size: 15px;
-            color: #718096;
-        }
+        .tagline { color: var(--text-dim); margin-bottom: 2rem; }
 
-        .cw-socials {
-            display: flex;
-            justify-content: center;
-            gap: 25px;
-            margin-bottom: 25px;
-        }
-
-        .cw-socials a svg {
-            width: 28px;
-            height: 28px;
-            fill: #718096;
-            transition: fill .25s, transform .25s;
-        }
-
-        .cw-socials a:hover svg {
-            transform: translateY(-2px) scale(1.1);
-        }
-
-        .cw-socials a:nth-child(1) svg:hover { fill: #6e5494; }
-        .cw-socials a:nth-child(2) svg:hover { fill: #0077b5; }
-        .cw-socials a:nth-child(3) svg:hover { fill: #1DA1F2; }
-
-        .cw-footer small {
-            display: block;
-            margin-top: 5px;
-            font-size: 13px;
-            color: #94a3b8;
-        }
-
-        .cw-footer a {
-            color: var(--primary-accent);
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .cw-footer a:hover {
-            text-decoration: underline;
-        }
-
-        @media (max-width: 1024px) {
-            .courses-container {
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            }
-        }
+        .cw-socials { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; }
+        .cw-socials svg { width: 22px; fill: var(--text-dim); transition: 0.3s; }
+        .cw-socials a:hover svg { fill: var(--primary); transform: translateY(-3px); }
 
         @media (max-width: 768px) {
-            .user-container {
-                flex-direction: column;
-                top: 20px;
-                right: 20px;
-                gap: 10px;
-            }
-            .logout-btn {
-                font-size: 14px;
-                padding: 8px 16px;
-            }
-            #course-title {
-                font-size: 2.5rem;
-            }
-            .courses-container {
-                padding: 20px;
-                grid-template-columns: 1fr;
-            }
-            .filter-dropdown form {
-                flex-direction: column;
-                gap: 10px;
-                padding: 15px;
-            }
-            .filter-dropdown select, .filter-dropdown button {
-                width: 100%;
-            }
+            #course-title { font-size: 2.2rem; }
+            .courses-container { padding: 0 20px 60px; }
+            .user-container { padding: 1rem 1.5rem; }
         }
     </style>
-    <script>
-        function toggleDropdown() {
-            const dropdown = document.getElementById('filterDropdown');
-            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const courseCards = document.querySelectorAll('.course-card');
-            courseCards.forEach((card, index) => {
-                card.style.setProperty('--card-index', index);
-            });
-        });
-    </script>
 </head>
 <body>
 
@@ -541,52 +331,50 @@ if ($result) {
     <a href="profile.php" class="user-icon" title="<?php echo htmlspecialchars($user_email); ?>">
         <?php echo htmlspecialchars($first_letter); ?>
     </a>
-    <a href="logout.php" class="logout-btn">Logout</a>
+    <a href="logout.php" class="logout-btn">Sign Out</a>
 </div>
 
 <div class="header-container">
     <h2 id="course-title">
-        <?php
-        if ($is_filter_active) {
-            echo htmlspecialchars($interest) . " Courses";
-        } else {
-            echo "Discover Your Next Course";
-        }
-        ?>
+        <?php echo $is_filter_active ? htmlspecialchars($interest) . " Programs" : "Elevate Your Career"; ?>
     </h2>
     <div class="filter-buttons-wrapper">
-        <button class="filter-btn" onclick="toggleDropdown()">Filter</button>
+        <button class="filter-btn" onclick="toggleDropdown()"><i class="fas fa-filter mr-2"></i> Categories</button>
         <?php if ($is_filter_active): ?>
-            <a href="?" class="filter-btn-clear">Clear Filter</a>
+            <a href="?" class="filter-btn-clear">Reset View</a>
         <?php endif; ?>
     </div>
+    
     <div class="filter-dropdown" id="filterDropdown" style="display: none;">
         <form method="GET" action="">
             <select name="interest" required>
-                <option value="">Select Interest</option>
+                <option value="">Choose a path...</option>
                 <?php foreach ($interest_mapping as $key => $value): ?>
                     <option value="<?php echo htmlspecialchars($key); ?>" <?php if ($interest === $key) echo 'selected'; ?>>
                         <?php echo htmlspecialchars($key); ?>
                     </option>
                 <?php endforeach; ?>
             </select>
-            <button type="submit">Apply Filter</button>
+            <button type="submit" class="filter-btn">Apply</button>
         </form>
     </div>
 </div>
+
 <div class="courses-container">
     <?php
     if (!empty($no_courses_message)) {
-        echo $no_courses_message;
+        echo "<div style='grid-column: 1/-1; text-align: center; padding: 4rem;'>" . $no_courses_message . "</div>";
     } elseif ($result && $result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
     ?>
         <div class="course-card">
-            <img src="<?php echo htmlspecialchars($row['image_path']); ?>" alt="Course Image">
+            <img src="<?php echo htmlspecialchars($row['image_path']); ?>" alt="Course">
+            <span style="font-size: 0.75rem; color: var(--primary); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+                <?php echo htmlspecialchars($row['category']); ?>
+            </span>
             <h3><?php echo htmlspecialchars($row['name']); ?></h3>
-            <p><strong>Category:</strong> <?php echo htmlspecialchars($row['category']); ?></p>
-            <p><?php echo nl2br(htmlspecialchars($row['short_intro'])); ?></p>
-            <a href="course_details.php?course_id=<?php echo htmlspecialchars($row['course_id']); ?>" class="enroll-btn">Explore Now</a>
+            <p><?php echo nl2br(htmlspecialchars(substr($row['short_intro'], 0, 120))); ?>...</p>
+            <a href="course_details.php?course_id=<?php echo htmlspecialchars($row['course_id']); ?>" class="enroll-btn">Explore Course</a>
         </div>
     <?php
         }
@@ -596,28 +384,21 @@ if ($result) {
 </div>
 
 <footer class="cw-footer">
-    <svg class="cw-footer__logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M4 3h8a3 3 0 0 1 3 3v14a3 3 0 0 0-3-3H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm8 0h8a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-8a3 3 0 0 0-3 3V6a3 3 0 0 1 3-3ZM8 7h4v2H8V7Zm0 4h4v2H8v-2Z"/>
-    </svg>
-
-    <h2>Intelligent Course Recommendation System</h2>
-    <p class="tagline">Your intelligent guide to learning.</p>
-
+    <h2>Learning Reimagined</h2>
+    <p class="tagline">Providing intelligent guidance for modern education.</p>
     <div class="cw-socials">
-        <a href="https://github.com/your-repo" aria-label="GitHub">
-        <svg viewBox="0 0 24 24"><path d="M12 .5a12 12 0 0 0-3.79 23.4c.6.11.82-.26.82-.58v-2.04c-3.34.73-4.04-1.6-4.04-1.6-.55-1.4-1.34-1.77-1.34-1.77-1.1-.75.08-.73.08-.73 1.22.09 1.86 1.25 1.86 1.25 1.08 1.84 2.83 1.31 3.52 1 .11-.78.42-1.31.76-1.61-2.66-.3-5.47-1.33-5.47-5.9 0-1.3.47-2.36 1.24-3.19-.12-.3-.54-1.52.12-3.16 0 0 1-.32 3.31 1.23A11.5 11.5 0 0 1 12 6.8a11.5 11.5 0 0 1 3.02.41c2.3-1.55 3.3-1.23 3.3-1.23.66 1.64.24 2.86.12 3.16.77.83 1.23 1.9 1.23 3.2 0 4.59-2.82 5.6-5.5 5.89.43.37.82 1.09.82 2.2v3.26c0 .32.21.7.82.58A12 12 0 0 0 12 .5Z"/></svg>
-        </a>
-        <a href="https://linkedin.com/in/your-profile" aria-label="LinkedIn">
-        <svg viewBox="0 0 24 24"><path d="M4.98 3.5A2.5 2.5 0 1 1 5 8.5a2.5 2.5 0 0 1 0-5Zm.02 5.75H2V22h3V9.25Zm7.25 0H11V22h3v-6.5c0-1.72 2-1.86 2 0V22h3v-7.79c0-4.6-5.25-4.43-6.75-2.16v-2.8Z"/></svg>
-        </a>
-        <a href="https://twitter.com/your-handle" aria-label="Twitter">
-        <svg viewBox="0 0 24 24"><path d="M23 2.94a9.6 9.6 0 0 1-2.83.78A4.93 4.93 0 0 0 22.39.37a9.8 9.8 0 0 1-3.13 1.2A4.9 4.9 0 0 0 16.2 0c-2.73 0-4.95 2.23-4.95 4.97 0 .39.04.77.12 1.13A13.94 13.94 0 0 1 1.64.88a4.97 4.97 0 0 0-.67 2.5 5 5 0 0 0 2.2 4.14 4.8 4.8 0 0 1-2.24-.62v.07c0 2.4 1.7 4.4 3.95 4.86-.41.11-.85.17-1.3.17-.32 0-.63-.03-.93-.09.64 2 2.5 3.46 4.7 3.5A9.86 9.86 0 0 1 0 19.54a13.88 13.88 0 0 0 7.55 2.22c9.06 0 14.01-7.55 14.01-14.09 0-.21 0-.42-.01-.63A10.07 10.07 0 0 0 23 2.94Z"/></svg>
-        </a>
+        <a href="#"><i class="fab fa-github"></i></a>
+        <a href="#"><i class="fab fa-linkedin"></i></a>
+        <a href="#"><i class="fab fa-twitter"></i></a>
     </div>
-
-    <small>© 2025 Intelligent Course Recommendation System. All rights reserved.</small>
-    <small>Built by <a href="#">Nitesh - K Manoj - Mahalakshmi</a>.</small>
+    <small style="color: #475569;">&copy; 2026 Course Recommendation System. Developed for Excellence.</small>
 </footer>
 
+<script>
+    function toggleDropdown() {
+        const dropdown = document.getElementById('filterDropdown');
+        dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+    }
+</script>
 </body>
 </html>

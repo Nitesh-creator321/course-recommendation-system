@@ -1,78 +1,64 @@
 <?php
 session_start();
 
-// Ensure user is logged in and request is AJAX
-if (!isset($_SESSION['user_id']) || !isset($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) !== 'xmlhttprequest') {
-    http_response_code(403); // Forbidden
+// Ensure user is logged in
+if (!isset($_SESSION['user_id'])) {
+    http_response_code(403);
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized request.']);
     exit;
 }
 
-// Enable error reporting
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
-// Database connection details
+// Database connection
 $servername = "localhost";
 $username = "root";
-$password = ""; // <--- IMPORTANT: SET YOUR DATABASE PASSWORD HERE
+$password = ""; 
 $dbname = "course_recommender_db";
 
-// Get data from the AJAX request
+// Get data from the request
 $user_id = $_SESSION['user_id'];
 $course_id = $_POST['course_id'] ?? null;
 $rating = $_POST['rating'] ?? null;
 
-// Validate data
+// Validate basic data requirements
 if (!is_numeric($course_id) || !is_numeric($rating) || $rating < 1 || $rating > 5) {
-    http_response_code(400); // Bad Request
+    http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => 'Invalid rating data.']);
     exit;
 }
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 if ($conn->connect_error) {
-    http_response_code(500); // Internal Server Error
-    echo json_encode(['status' => 'error', 'message' => 'Database connection failed: ' . $conn->connect_error]);
+    http_response_code(500);
+    echo json_encode(['status' => 'error', 'message' => 'Database connection failed.']);
     exit;
 }
 
-// Check if the user is enrolled and has completed the course (you'll need to adjust the query based on your status values)
+// 1. SECURITY CHECK: Verify user is enrolled AND course is 'completed'
+// This matches your requirement that the rating only appears after 100% completion.
 $stmt_check = $conn->prepare("SELECT enrollment_id FROM enrollments WHERE user_id = ? AND course_id = ? AND status = 'completed'");
-if ($stmt_check === false) {
-    http_response_code(500);
-    echo json_encode(['status' => 'error', 'message' => 'Error preparing enrollment check: ' . $conn->error]);
-    $conn->close();
-    exit;
-}
 $stmt_check->bind_param('ii', $user_id, $course_id);
 $stmt_check->execute();
 $result_check = $stmt_check->get_result();
 
 if ($result_check->num_rows === 0) {
-    http_response_code(403); // Forbidden
-    echo json_encode(['status' => 'error', 'message' => 'You are not eligible to rate this course.']);
+    http_response_code(403);
+    echo json_encode(['status' => 'error', 'message' => 'You must finish the course roadmap to 100% before rating.']);
     $stmt_check->close();
     $conn->close();
     exit;
 }
 $stmt_check->close();
 
-// Update the rating in the enrollments table
+// 2. UPDATE ACTION: Save the rating value to the enrollment record
 $stmt_update = $conn->prepare("UPDATE enrollments SET rating = ? WHERE user_id = ? AND course_id = ?");
-if ($stmt_update === false) {
-    http_response_code(500);
-    echo json_encode(['status' => 'error', 'message' => 'Error preparing rating update: ' . $conn->error]);
-    $conn->close();
-    exit;
-}
 $stmt_update->bind_param('iii', $rating, $user_id, $course_id);
 
 if ($stmt_update->execute()) {
-    echo json_encode(['status' => 'success', 'message' => 'Rating submitted successfully!', 'rating' => $rating, 'course_id' => $course_id]);
+    // Return success to the AJAX fetch call in profile.php
+    echo "success"; 
 } else {
     http_response_code(500);
-    echo json_encode(['status' => 'error', 'message' => 'Error updating rating: ' . $stmt_update->error]);
+    echo "Error updating database: " . $stmt_update->error;
 }
 
 $stmt_update->close();
