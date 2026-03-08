@@ -8,16 +8,18 @@ This project is a web-based application that recommends courses to students base
 - Course Enrollment
 - View Enrolled Courses
 - User Profile
+  
+## Tech Stack
+HTML | CSS | PHP | MySQL | XAMPP
 
 ## Technologies Used
-- HTML
-- CSS
-- PHP
-- MySQL
-- XAMPP
+- HTML – Structure of the web pages
+- CSS – Styling and layout
+- PHP – Backend logic and server-side processing
+- MySQL – Database management
+- XAMPP – Local server environment
 
 ## How to Run the Project
-
 1. Install XAMPP
 2. Start Apache and MySQL
 3. Place the project folder inside the `htdocs` directory
